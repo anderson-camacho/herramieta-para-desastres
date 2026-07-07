@@ -1,0 +1,32 @@
+name: ci
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  flutter:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+      - name: Flutter version
+        run: flutter --version
+      - name: Dependencies
+        run: flutter pub get
+      - name: Format check
+        run: dart format --output=none --set-exit-if-changed lib test
+      - name: Analyze
+        run: flutter analyze
+      - name: Tests
+        run: flutter test --coverage
+      - name: Build development APK
+        run: flutter build apk --debug --flavor development -t lib/main.dart
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: signalscope-development-apk
+          path: build/app/outputs/flutter-apk/*.apk
+

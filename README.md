@@ -97,6 +97,10 @@ La documentacion detallada esta en [docs/architecture.md](D:/github/herramieta-p
 
 La politica de privacidad esta en [docs/privacy-policy.md](D:/github/herramieta-para-desastres/docs/privacy-policy.md).
 
+## Licencia
+
+Este proyecto se publica bajo [Apache-2.0](D:/github/herramieta-para-desastres/LICENSE).
+
 ## Limitaciones verificadas en este entorno
 
 - `flutter analyze` paso sin issues.
