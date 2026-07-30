@@ -14,9 +14,27 @@ class EmergencySettingsStore {
     if (raw == null || raw.isEmpty) {
       return _defaultSettings();
     }
-    return EmergencySettings.fromJson(
+
+    final settings = EmergencySettings.fromJson(
       jsonDecode(raw) as Map<String, Object?>,
     );
+
+    // Migra el contacto demostrativo que venía precargado en versiones anteriores.
+    final contacts = settings.contacts
+        .where(
+          (contact) => !(contact.name == 'Familiar de confianza' &&
+              contact.phone == '123' &&
+              contact.email.isEmpty),
+        )
+        .toList();
+
+    if (contacts.length != settings.contacts.length) {
+      final migrated = settings.copyWith(contacts: contacts);
+      await save(migrated);
+      return migrated;
+    }
+
+    return settings;
   }
 
   Future<void> save(EmergencySettings settings) async {
@@ -27,21 +45,11 @@ class EmergencySettingsStore {
   EmergencySettings _defaultSettings() {
     final countryCode = PlatformDispatcher.instance.locale.countryCode ?? 'CO';
     return EmergencySettings(
-      contacts: const <EmergencyContact>[
-        EmergencyContact(
-          name: 'Familiar de confianza',
-          phone: '123',
-          email: '',
-        ),
-      ],
+      contacts: const <EmergencyContact>[],
       quickMessages: const <QuickEmergencyMessage>[
         QuickEmergencyMessage(
-          title: 'No puedo respirar',
-          text: 'No puedo respirar bien. Necesito ayuda urgente.',
-        ),
-        QuickEmergencyMessage(
-          title: 'No puedo ver nada',
-          text: 'No puedo ver nada por humo, polvo u oscuridad. Necesito apoyo.',
+          title: 'Necesito ayuda',
+          text: 'Necesito ayuda urgente. Por favor comunícate conmigo.',
         ),
         QuickEmergencyMessage(
           title: 'Estoy atrapado',
@@ -49,14 +57,18 @@ class EmergencySettingsStore {
         ),
         QuickEmergencyMessage(
           title: 'Estoy herido',
-          text: 'Estoy herido y necesito asistencia medica.',
+          text: 'Estoy herido y necesito asistencia médica.',
+        ),
+        QuickEmergencyMessage(
+          title: 'No puedo respirar',
+          text: 'No puedo respirar bien. Necesito ayuda urgente.',
         ),
         QuickEmergencyMessage(
           title: 'Estoy a salvo',
-          text: 'Sigo con vida y estoy a salvo por ahora.',
+          text: 'Estoy a salvo por ahora. Me comunicaré cuando pueda.',
         ),
       ],
-      additionalNote: 'Estoy usando Rescue Signal para pedir ayuda.',
+      additionalNote: 'Mensaje enviado desde la aplicación Emergencias.',
       countryCode: countryCode.toUpperCase(),
     );
   }
@@ -68,12 +80,12 @@ class EmergencyDirectory {
       EmergencyNumber(
         label: 'Emergencias generales',
         number: '123',
-        description: 'Numero unico de emergencias en Colombia. Atiende policia, salud y bomberos segun el caso.',
+        description: 'Número único de emergencias en Colombia.',
       ),
       EmergencyNumber(
-        label: 'Policia',
+        label: 'Policía',
         number: '112',
-        description: 'Apoyo policial inmediato donde esta linea local aplica.',
+        description: 'Apoyo policial inmediato donde esta línea local aplica.',
       ),
       EmergencyNumber(
         label: 'Bomberos',
@@ -83,36 +95,31 @@ class EmergencyDirectory {
       EmergencyNumber(
         label: 'Ambulancia',
         number: '125',
-        description: 'Orientado a urgencias medicas donde esta linea local aplica.',
+        description: 'Urgencias médicas donde esta línea local aplica.',
       ),
       EmergencyNumber(
         label: 'Cruz Roja',
         number: '132',
-        description: 'Apoyo humanitario y primeros auxilios donde esta linea local aplica.',
+        description: 'Apoyo humanitario y primeros auxilios.',
       ),
     ],
     'US': const <EmergencyNumber>[
       EmergencyNumber(
         label: 'Emergencias generales',
         number: '911',
-        description: 'Policia, bomberos y ambulancia en peligro inmediato.',
+        description: 'Policía, bomberos y ambulancia en peligro inmediato.',
       ),
       EmergencyNumber(
         label: 'Crisis emocional',
         number: '988',
-        description: 'Linea de crisis y prevencion del suicidio.',
-      ),
-      EmergencyNumber(
-        label: 'Apoyo social',
-        number: '211',
-        description: 'Orientacion a servicios sociales y refugio en muchas areas.',
+        description: 'Línea de crisis y prevención del suicidio.',
       ),
     ],
     'ES': const <EmergencyNumber>[
       EmergencyNumber(
         label: 'Emergencias generales',
         number: '112',
-        description: 'Numero unico de urgencias en todo el territorio nacional.',
+        description: 'Número único de urgencias en España.',
       ),
     ],
   };
@@ -121,11 +128,10 @@ class EmergencyDirectory {
     return directory[countryCode.toUpperCase()] ??
         const <EmergencyNumber>[
           EmergencyNumber(
-            label: 'Numero local',
+            label: 'Número local',
             number: 'Consulta localmente',
-            description: 'No hay una guia integrada para este pais. Verifica el numero oficial local antes de depender de el.',
+            description: 'Verifica el número oficial del país antes de una emergencia.',
           ),
         ];
   }
 }
-
