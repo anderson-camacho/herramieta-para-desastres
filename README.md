@@ -51,6 +51,25 @@ flutter build appbundle --release --flavor production -t lib/main.dart
 flutter build web
 ```
 
+## Firma de lanzamiento Android
+
+Las compilaciones `release` requieren una llave privada real y ya no usan la llave de depuracion.
+
+Desde PowerShell puedes iniciar la configuracion con:
+
+```powershell
+./scripts/create-release-keystore.ps1
+Copy-Item android/key.properties.example android/key.properties
+```
+
+Después completa las contrasenas en `android/key.properties` y genera el APK:
+
+```powershell
+flutter build apk --release --flavor production -t lib/main.dart
+```
+
+La guia completa esta en `docs/release-signing.md`. Nunca subas el keystore, `android/key.properties` ni las contrasenas al repositorio.
+
 ## Artefactos verificados en esta maquina
 
 - APK debug de desarrollo: `build/app/outputs/flutter-apk/app-development-debug.apk`
