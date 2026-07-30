@@ -20,7 +20,7 @@ class DemoSignalRepository {
     return const CapabilitySnapshot(
       platform: 'demo',
       platformVersion: '0',
-      manufacturer: 'SignalScope',
+      manufacturer: 'Herramienta para Desastres',
       model: 'Demo Mode',
       supportsTelephony: true,
       supportsWifi: true,
