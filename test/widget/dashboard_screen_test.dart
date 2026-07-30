@@ -15,7 +15,7 @@ void main() {
     await tester.pumpWidget(const MaterialApp(home: DashboardScreen(useDemoOverride: true)));
     await tester.pump(const Duration(seconds: 1));
 
-    expect(find.text('SignalScope'), findsOneWidget);
+    expect(find.text('Herramienta para Desastres'), findsOneWidget);
     expect(find.text('Diagnostico inicial'), findsOneWidget);
     expect(find.textContaining('BLE'), findsWidgets);
   });
