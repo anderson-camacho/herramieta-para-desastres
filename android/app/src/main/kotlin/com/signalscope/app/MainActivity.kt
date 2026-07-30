@@ -2,7 +2,6 @@ package com.signalscope.app
 
 import android.Manifest
 import android.annotation.SuppressLint
-import android.bluetooth.BluetoothAdapter
 import android.bluetooth.BluetoothManager
 import android.bluetooth.le.BluetoothLeScanner
 import android.bluetooth.le.ScanCallback
@@ -12,9 +11,6 @@ import android.content.pm.PackageManager
 import android.hardware.camera2.CameraManager
 import android.media.AudioManager
 import android.media.ToneGenerator
-import android.net.ConnectivityManager
-import android.net.NetworkCapabilities
-import android.net.wifi.ScanResult as WifiScanResult
 import android.net.wifi.WifiManager
 import android.os.Build
 import android.os.Handler
@@ -44,6 +40,7 @@ class MainActivity : FlutterActivity(), MethodChannel.MethodCallHandler, EventCh
     private var activeToneRunnable: Runnable? = null
     private var torchCameraId: String? = null
     private var torchEnabled = false
+    private var previousAlarmVolume: Int? = null
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
@@ -87,9 +84,7 @@ class MainActivity : FlutterActivity(), MethodChannel.MethodCallHandler, EventCh
                 eventSink?.success(buildSignalPayload())
                 mainHandler.postDelayed(this, 3000)
             }
-        }.also {
-            mainHandler.post(it)
-        }
+        }.also(mainHandler::post)
     }
 
     override fun onCancel(arguments: Any?) {
@@ -109,8 +104,7 @@ class MainActivity : FlutterActivity(), MethodChannel.MethodCallHandler, EventCh
     }
 
     private fun getCapabilities(): Map<String, Any> {
-        val packageManager = packageManager
-        val bluetoothManager = getSystemService(Context.BLUETOOTH_SERVICE) as BluetoothManager
+        val bluetoothManager = getSystemService(Context.BLUETOOTH_SERVICE) as? BluetoothManager
         return mapOf(
             "platform" to "android",
             "platformVersion" to Build.VERSION.RELEASE,
@@ -124,14 +118,29 @@ class MainActivity : FlutterActivity(), MethodChannel.MethodCallHandler, EventCh
             "permissionStates" to mapOf(
                 "phone" to permissionState(Manifest.permission.READ_PHONE_STATE),
                 "location" to permissionState(Manifest.permission.ACCESS_FINE_LOCATION),
-                "bluetoothScan" to permissionStateCompat(Manifest.permission.BLUETOOTH_SCAN),
-                "bluetoothConnect" to permissionStateCompat(Manifest.permission.BLUETOOTH_CONNECT),
+                "nearbyWifi" to permissionStateCompat(
+                    Manifest.permission.NEARBY_WIFI_DEVICES,
+                    Build.VERSION_CODES.TIRAMISU,
+                ),
+                "bluetoothScan" to permissionStateCompat(
+                    Manifest.permission.BLUETOOTH_SCAN,
+                    Build.VERSION_CODES.S,
+                ),
+                "bluetoothConnect" to permissionStateCompat(
+                    Manifest.permission.BLUETOOTH_CONNECT,
+                    Build.VERSION_CODES.S,
+                ),
+                "camera" to permissionState(Manifest.permission.CAMERA),
             ),
             "restrictions" to listOf(
-                "Los campos exactos dependen de fabricante, permisos y version de Android",
-                "La radio FM interna no se expone de forma publica en la mayoria de dispositivos",
-                "La app no transmite radiofrecuencia general. Solo usa canales permitidos del sistema y senales locales del telefono",
-                if (bluetoothManager.adapter == null) "Bluetooth no disponible en este hardware" else "Bluetooth detectado",
+                "Android y el fabricante pueden ocultar valores exactos de señal celular.",
+                "Wi-Fi y Bluetooth requieren permisos y servicios encendidos.",
+                "La radio FM interna no suele estar disponible mediante APIs públicas.",
+                if (bluetoothManager?.adapter == null) {
+                    "Bluetooth no fue detectado por Android."
+                } else {
+                    "Bluetooth fue detectado por Android."
+                },
             ),
         )
     }
@@ -140,24 +149,23 @@ class MainActivity : FlutterActivity(), MethodChannel.MethodCallHandler, EventCh
         val manager = getSystemService(Context.CAMERA_SERVICE) as? CameraManager ?: return false
         return runCatching {
             manager.cameraIdList.any { id ->
-                val characteristics = manager.getCameraCharacteristics(id)
-                characteristics.get(android.hardware.camera2.CameraCharacteristics.FLASH_INFO_AVAILABLE) == true
+                manager.getCameraCharacteristics(id)
+                    .get(android.hardware.camera2.CameraCharacteristics.FLASH_INFO_AVAILABLE) == true
             }
         }.getOrDefault(false)
     }
 
     private fun setTorchEnabled(enabled: Boolean): Boolean {
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) {
+            return false
+        }
         val manager = getSystemService(Context.CAMERA_SERVICE) as? CameraManager ?: return false
         val cameraId = torchCameraId ?: runCatching {
             manager.cameraIdList.firstOrNull { id ->
-                val characteristics = manager.getCameraCharacteristics(id)
-                characteristics.get(android.hardware.camera2.CameraCharacteristics.FLASH_INFO_AVAILABLE) == true
+                manager.getCameraCharacteristics(id)
+                    .get(android.hardware.camera2.CameraCharacteristics.FLASH_INFO_AVAILABLE) == true
             }
-        }.getOrNull()
-
-        if (cameraId == null) {
-            return false
-        }
+        }.getOrNull() ?: return false
 
         return runCatching {
             manager.setTorchMode(cameraId, enabled)
@@ -169,29 +177,44 @@ class MainActivity : FlutterActivity(), MethodChannel.MethodCallHandler, EventCh
 
     private fun startSosTone() {
         stopAudibleSignal()
+        prepareAlarmVolume()
         val pattern = listOf(
-            180L to ToneGenerator.TONE_PROP_BEEP2,
-            180L to ToneGenerator.TONE_PROP_BEEP2,
-            180L to ToneGenerator.TONE_PROP_BEEP2,
-            420L to ToneGenerator.TONE_CDMA_HIGH_PBX_L,
-            420L to ToneGenerator.TONE_CDMA_HIGH_PBX_L,
-            420L to ToneGenerator.TONE_CDMA_HIGH_PBX_L,
-            180L to ToneGenerator.TONE_PROP_BEEP2,
-            180L to ToneGenerator.TONE_PROP_BEEP2,
-            180L to ToneGenerator.TONE_PROP_BEEP2,
+            220L to ToneGenerator.TONE_CDMA_ALERT_CALL_GUARD,
+            220L to ToneGenerator.TONE_CDMA_HIGH_PBX_L,
+            220L to ToneGenerator.TONE_CDMA_ALERT_CALL_GUARD,
+            520L to ToneGenerator.TONE_CDMA_HIGH_PBX_L,
         )
         playPattern(pattern, vibrate = true)
     }
 
     private fun startRescueWhistle() {
         stopAudibleSignal()
+        prepareAlarmVolume()
         val pattern = listOf(
             700L to ToneGenerator.TONE_CDMA_HIGH_L,
-            250L to ToneGenerator.TONE_CDMA_HIGH_PBX_SS,
-            700L to ToneGenerator.TONE_CDMA_HIGH_L,
-            250L to ToneGenerator.TONE_CDMA_HIGH_PBX_SS,
+            220L to ToneGenerator.TONE_CDMA_HIGH_PBX_SS,
         )
         playPattern(pattern, vibrate = false)
+    }
+
+    private fun prepareAlarmVolume() {
+        val audioManager = getSystemService(Context.AUDIO_SERVICE) as AudioManager
+        if (previousAlarmVolume == null) {
+            previousAlarmVolume = audioManager.getStreamVolume(AudioManager.STREAM_ALARM)
+        }
+        val maximum = audioManager.getStreamMaxVolume(AudioManager.STREAM_ALARM)
+        runCatching {
+            audioManager.setStreamVolume(AudioManager.STREAM_ALARM, maximum, 0)
+        }
+    }
+
+    private fun restoreAlarmVolume() {
+        val previous = previousAlarmVolume ?: return
+        val audioManager = getSystemService(Context.AUDIO_SERVICE) as AudioManager
+        runCatching {
+            audioManager.setStreamVolume(AudioManager.STREAM_ALARM, previous, 0)
+        }
+        previousAlarmVolume = null
     }
 
     private fun playPattern(pattern: List<Pair<Long, Int>>, vibrate: Boolean) {
@@ -201,20 +224,16 @@ class MainActivity : FlutterActivity(), MethodChannel.MethodCallHandler, EventCh
             private var index = 0
 
             override fun run() {
-                if (toneGenerator == null) {
-                    return
-                }
+                val activeGenerator = toneGenerator ?: return
                 val (durationMs, tone) = pattern[index]
-                generator.startTone(tone, durationMs.toInt())
+                activeGenerator.startTone(tone, durationMs.toInt())
                 if (vibrate) {
                     vibrateBriefly(durationMs)
                 }
                 index = (index + 1) % pattern.size
                 mainHandler.postDelayed(this, durationMs + 90L)
             }
-        }.also { runnable ->
-            mainHandler.post(runnable)
-        }
+        }.also(mainHandler::post)
     }
 
     private fun vibrateBriefly(durationMs: Long) {
@@ -229,10 +248,15 @@ class MainActivity : FlutterActivity(), MethodChannel.MethodCallHandler, EventCh
             return
         }
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            vibrator.vibrate(VibrationEffect.createOneShot(durationMs.coerceAtMost(200L), VibrationEffect.DEFAULT_AMPLITUDE))
+            vibrator.vibrate(
+                VibrationEffect.createOneShot(
+                    durationMs.coerceAtMost(250L),
+                    VibrationEffect.DEFAULT_AMPLITUDE,
+                ),
+            )
         } else {
             @Suppress("DEPRECATION")
-            vibrator.vibrate(durationMs.coerceAtMost(200L))
+            vibrator.vibrate(durationMs.coerceAtMost(250L))
         }
     }
 
@@ -241,6 +265,7 @@ class MainActivity : FlutterActivity(), MethodChannel.MethodCallHandler, EventCh
         activeToneRunnable = null
         toneGenerator?.release()
         toneGenerator = null
+        restoreAlarmVolume()
     }
 
     private fun permissionState(permission: String): String {
@@ -251,11 +276,12 @@ class MainActivity : FlutterActivity(), MethodChannel.MethodCallHandler, EventCh
         }
     }
 
-    private fun permissionStateCompat(permission: String): String {
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S) {
-            return "not_applicable"
+    private fun permissionStateCompat(permission: String, minimumApi: Int): String {
+        return if (Build.VERSION.SDK_INT < minimumApi) {
+            "not_applicable"
+        } else {
+            permissionState(permission)
         }
-        return permissionState(permission)
     }
 
     private fun buildSignalPayload(): List<Map<String, Any?>> {
@@ -271,43 +297,30 @@ class MainActivity : FlutterActivity(), MethodChannel.MethodCallHandler, EventCh
     private fun buildCellularSignal(): Map<String, Any?> {
         val telephonyManager = getSystemService(Context.TELEPHONY_SERVICE) as? TelephonyManager
         if (telephonyManager == null || !packageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY)) {
-            return signalMap("cellular", "Celular", "Hardware no compatible", "hardwareNotCompatible", null, null, emptyMap())
+            return signalMap("cellular", "Red celular", "Hardware no detectado", "hardwareNotCompatible", null, null)
         }
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_PHONE_STATE) != PackageManager.PERMISSION_GRANTED) {
-            return signalMap("cellular", "Celular", "Permiso requerido para leer estado celular", "permissionRequired", null, null, emptyMap())
+            return signalMap("cellular", "Red celular", "Falta permiso del teléfono", "permissionRequired", null, null)
         }
-        val signalStrength = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
-            telephonyManager.signalStrength
-        } else {
-            null
-        }
-        val level = signalStrength?.level
+
+        val signalStrength = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) telephonyManager.signalStrength else null
         val dbm = signalStrength?.cellSignalStrengths?.firstOrNull()?.dbm
-        val networkType = networkTypeName(telephonyManager.dataNetworkType)
-        val subscriptionCount = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP_MR1) {
-            val subManager = getSystemService(Context.TELEPHONY_SUBSCRIPTION_SERVICE) as SubscriptionManager
-            subManager.activeSubscriptionInfoCount
+        val simCount = runCatching {
+            val manager = getSystemService(Context.TELEPHONY_SUBSCRIPTION_SERVICE) as SubscriptionManager
+            manager.activeSubscriptionInfoCount
+        }.getOrDefault(0)
+        val summary = if (dbm == null) {
+            "Telefonía detectada · $simCount SIM activa(s) · Android no expuso dBm"
         } else {
-            0
-        }
-        val availability = if (dbm == null) "noData" else "available"
-        val summary = when {
-            telephonyManager.serviceState == null -> "Estado de servicio no disponible"
-            dbm == null -> "Android no entrego un valor actual de senal"
-            else -> "Servicio celular activo"
+            "Telefonía activa · $simCount SIM activa(s)"
         }
         return signalMap(
             "cellular",
-            "Celular",
+            "Red celular",
             summary,
-            availability,
+            if (dbm == null) "noData" else "available",
             dbm,
-            networkType,
-            mapOf(
-                "level" to (level?.toString() ?: "unknown"),
-                "simCount" to subscriptionCount.toString(),
-                "serviceState" to (telephonyManager.serviceState?.state?.toString() ?: "unknown"),
-            ),
+            networkTypeName(telephonyManager.dataNetworkType),
         )
     }
 
@@ -315,10 +328,10 @@ class MainActivity : FlutterActivity(), MethodChannel.MethodCallHandler, EventCh
     private fun buildWifiSignal(): Map<String, Any?> {
         val wifiManager = applicationContext.getSystemService(Context.WIFI_SERVICE) as? WifiManager
         if (wifiManager == null || !packageManager.hasSystemFeature(PackageManager.FEATURE_WIFI)) {
-            return signalMap("wifi", "Wi-Fi", "Hardware no compatible", "hardwareNotCompatible", null, null, emptyMap())
+            return signalMap("wifi", "Wi-Fi", "Hardware no detectado", "hardwareNotCompatible", null, null)
         }
         if (!wifiManager.isWifiEnabled) {
-            return signalMap("wifi", "Wi-Fi", "Activa el Wi-Fi para ver redes cercanas", "serviceDisabled", null, null, emptyMap())
+            return signalMap("wifi", "Wi-Fi", "Wi-Fi apagado", "serviceDisabled", null, null)
         }
         val connection = wifiManager.connectionInfo
         val currentRssi = connection?.rssi?.takeIf { it > -127 }
@@ -326,35 +339,26 @@ class MainActivity : FlutterActivity(), MethodChannel.MethodCallHandler, EventCh
         return signalMap(
             "wifi",
             "Wi-Fi",
-            if (networkCount == 0) "Sin redes visibles recientes" else "$networkCount redes visibles",
+            if (networkCount == 0) "Conectado, sin escaneo reciente" else "$networkCount redes visibles",
             "available",
             currentRssi,
             currentWifiBand(connection?.frequency),
-            mapOf(
-                "ssid" to (connection?.ssid ?: "unknown"),
-                "linkSpeedMbps" to (connection?.linkSpeed?.toString() ?: "unknown"),
-                "frequency" to (connection?.frequency?.toString() ?: "unknown"),
-            ),
         )
     }
 
     private fun buildBluetoothSignal(): Map<String, Any?> {
-        val bluetoothManager = getSystemService(Context.BLUETOOTH_SERVICE) as? BluetoothManager
-        val adapter = bluetoothManager?.adapter
-        if (adapter == null) {
-            return signalMap("bluetooth", "Bluetooth", "Hardware no compatible", "hardwareNotCompatible", null, null, emptyMap())
-        }
+        val adapter = (getSystemService(Context.BLUETOOTH_SERVICE) as? BluetoothManager)?.adapter
+            ?: return signalMap("bluetooth", "Bluetooth", "Hardware no detectado", "hardwareNotCompatible", null, null)
         if (!adapter.isEnabled) {
-            return signalMap("bluetooth", "Bluetooth", "El Bluetooth esta apagado", "serviceDisabled", null, "BLE", emptyMap())
+            return signalMap("bluetooth", "Bluetooth", "Bluetooth apagado", "serviceDisabled", null, "BLE")
         }
         return signalMap(
             "bluetooth",
             "Bluetooth",
-            if (bleScanCallback == null) "Bluetooth listo para escaneo BLE limitado" else "Escaneo BLE activo",
+            if (bleScanCallback == null) "Bluetooth listo" else "Escaneo BLE activo",
             "available",
             null,
             "BLE",
-            mapOf("adapterState" to adapter.state.toString()),
         )
     }
 
@@ -362,19 +366,18 @@ class MainActivity : FlutterActivity(), MethodChannel.MethodCallHandler, EventCh
         val supported = packageManager.hasSystemFeature(PackageManager.FEATURE_USB_HOST)
         return signalMap(
             "sdr",
-            "SDR",
-            if (supported) "USB Host detectado. Sin receptor SDR conectado." else "Este dispositivo no soporta USB Host",
+            "USB externo",
+            if (supported) "USB Host disponible; conecta un receptor compatible" else "USB Host no detectado",
             if (supported) "noData" else "hardwareNotCompatible",
             null,
             null,
-            mapOf("usbHost" to supported.toString()),
         )
     }
 
     @SuppressLint("MissingPermission")
     private fun startBleScan(): List<String> {
-        val bluetoothManager = getSystemService(Context.BLUETOOTH_SERVICE) as? BluetoothManager
-        val adapter = bluetoothManager?.adapter ?: return listOf("BLUETOOTH_NOT_SUPPORTED")
+        val adapter = (getSystemService(Context.BLUETOOTH_SERVICE) as? BluetoothManager)?.adapter
+            ?: return listOf("BLUETOOTH_NOT_SUPPORTED")
         if (!adapter.isEnabled) {
             return listOf("BLUETOOTH_DISABLED")
         }
@@ -385,27 +388,22 @@ class MainActivity : FlutterActivity(), MethodChannel.MethodCallHandler, EventCh
         }
         stopBleScan()
         bleScanner = adapter.bluetoothLeScanner
-        val errors = mutableListOf<String>()
         bleScanCallback = object : ScanCallback() {
             override fun onScanResult(callbackType: Int, result: ScanResult) {
-                super.onScanResult(callbackType, result)
                 eventSink?.success(buildSignalPayload())
             }
 
             override fun onScanFailed(errorCode: Int) {
-                super.onScanFailed(errorCode)
-                errors.add("BLE_SCAN_FAILED_$errorCode")
+                eventSink?.error("BLE_SCAN_FAILED", "Código $errorCode", null)
             }
         }
         bleScanner?.startScan(bleScanCallback)
         mainHandler.postDelayed({ stopBleScan() }, 15000)
-        return if (errors.isEmpty()) listOf("BLE_SCAN_STARTED") else errors
+        return listOf("BLE_SCAN_STARTED")
     }
 
     private fun stopBleScan() {
-        runCatching {
-            bleScanner?.stopScan(bleScanCallback)
-        }
+        runCatching { bleScanner?.stopScan(bleScanCallback) }
         bleScanCallback = null
     }
 
@@ -421,7 +419,7 @@ class MainActivity : FlutterActivity(), MethodChannel.MethodCallHandler, EventCh
             TelephonyManager.NETWORK_TYPE_HSPAP -> "3G"
             TelephonyManager.NETWORK_TYPE_LTE -> "LTE"
             TelephonyManager.NETWORK_TYPE_NR -> "5G"
-            else -> "unknown"
+            else -> "Desconocida"
         }
     }
 
@@ -431,7 +429,7 @@ class MainActivity : FlutterActivity(), MethodChannel.MethodCallHandler, EventCh
             frequency in 2400..2500 -> "2.4 GHz"
             frequency in 4900..5900 -> "5 GHz"
             frequency in 5925..7125 -> "6 GHz"
-            else -> "unknown"
+            else -> "Desconocida"
         }
     }
 
@@ -442,7 +440,6 @@ class MainActivity : FlutterActivity(), MethodChannel.MethodCallHandler, EventCh
         availability: String,
         rssi: Int?,
         networkType: String?,
-        details: Map<String, String>,
     ): Map<String, Any?> {
         return mapOf(
             "module" to module,
@@ -452,7 +449,7 @@ class MainActivity : FlutterActivity(), MethodChannel.MethodCallHandler, EventCh
             "timestamp" to java.time.Instant.now().toString(),
             "rssi" to rssi,
             "networkType" to networkType,
-            "details" to details,
+            "details" to emptyMap<String, String>(),
         )
     }
 }
