@@ -1,6 +1,6 @@
 # Politica de privacidad
 
-SignalScope procesa la informacion localmente en el dispositivo para mostrar observaciones de senal celular, Wi-Fi, Bluetooth y compatibilidad USB Host.
+Herramienta para Desastres procesa la informacion localmente en el dispositivo para mostrar observaciones de senal celular, Wi-Fi, Bluetooth y compatibilidad USB Host.
 
 ## Informacion procesada
 
@@ -30,4 +30,3 @@ Los logs locales y el historial podran limpiarse desde la aplicacion conforme ev
 ## Contacto
 
 Responsable configurable antes de distribucion publica.
-

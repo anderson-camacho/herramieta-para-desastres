@@ -1,6 +1,6 @@
-# SignalScope
+# Herramienta para Desastres
 
-SignalScope es una aplicacion Flutter con Android como plataforma principal para observar senales que el dispositivo puede medir legalmente mediante APIs publicas: celular, Wi-Fi, Bluetooth/BLE y compatibilidad USB Host para un futuro SDR externo.
+Herramienta para Desastres es una aplicacion Flutter con Android como plataforma principal para observar senales que el dispositivo puede medir legalmente mediante APIs publicas: celular, Wi-Fi, Bluetooth/BLE y compatibilidad USB Host para un futuro SDR externo.
 
 ## Que hace
 
@@ -44,20 +44,20 @@ flutter pub get
 flutter analyze
 flutter test
 flutter run
-flutter build apk --debug
-flutter build apk --release
-flutter build apk --split-per-abi
-flutter build appbundle --release
+flutter build apk --debug --flavor development -t lib/main.dart
+flutter build apk --release --flavor production -t lib/main.dart
+flutter build apk --release --flavor production -t lib/main.dart --split-per-abi
+flutter build appbundle --release --flavor production -t lib/main.dart
 flutter build web
 ```
 
 ## Artefactos verificados en esta maquina
 
-- APK debug de desarrollo: [app-development-debug.apk](D:/github/herramieta-para-desastres/build/app/outputs/flutter-apk/app-development-debug.apk)
-- APK release universal: [app-production-release.apk](D:/github/herramieta-para-desastres/build/app/outputs/flutter-apk/app-production-release.apk)
-- APKs por ABI: [app-armeabi-v7a-production-release.apk](D:/github/herramieta-para-desastres/build/app/outputs/flutter-apk/app-armeabi-v7a-production-release.apk), [app-arm64-v8a-production-release.apk](D:/github/herramieta-para-desastres/build/app/outputs/flutter-apk/app-arm64-v8a-production-release.apk), [app-x86_64-production-release.apk](D:/github/herramieta-para-desastres/build/app/outputs/flutter-apk/app-x86_64-production-release.apk)
-- Android App Bundle: [app-production-release.aab](D:/github/herramieta-para-desastres/build/app/outputs/bundle/productionRelease/app-production-release.aab)
-- Build web: [build/web](D:/github/herramieta-para-desastres/build/web)
+- APK debug de desarrollo: `build/app/outputs/flutter-apk/app-development-debug.apk`
+- APK release universal: `build/app/outputs/flutter-apk/app-production-release.apk`
+- APKs por ABI: `build/app/outputs/flutter-apk/app-*-production-release.apk`
+- Android App Bundle: `build/app/outputs/bundle/productionRelease/app-production-release.aab`
+- Build web: `build/web`
 
 ## Instalacion en Android
 
@@ -91,15 +91,15 @@ adb install -r build/app/outputs/flutter-apk/app-production-release.apk
 
 ## Arquitectura
 
-La documentacion detallada esta en [docs/architecture.md](D:/github/herramieta-para-desastres/docs/architecture.md).
+La documentacion detallada esta en `docs/architecture.md`.
 
 ## Privacidad
 
-La politica de privacidad esta en [docs/privacy-policy.md](D:/github/herramieta-para-desastres/docs/privacy-policy.md).
+La politica de privacidad esta en `docs/privacy-policy.md`.
 
 ## Licencia
 
-Este proyecto se publica bajo [Apache-2.0](D:/github/herramieta-para-desastres/LICENSE).
+Este proyecto se publica bajo Apache-2.0.
 
 ## Limitaciones verificadas en este entorno
 
@@ -109,5 +109,3 @@ Este proyecto se publica bajo [Apache-2.0](D:/github/herramieta-para-desastres/L
 - Se generaron APK debug, APK release, APKs por ABI y AAB.
 - No fue posible validar hardware real: Dual SIM, BLE real, Wi-Fi real, OTG real, SDR real.
 - El build de Windows requiere habilitar `Developer Mode` por soporte de symlinks.
-- El proyecto builda hoy con AGP 8.6.1 y Gradle 8.7, pero Flutter ya advierte que en futuras versiones convendra migrar a AGP 8.11.1+, Gradle 8.14+ y Built-in Kotlin.
-# herramieta-para-desastres

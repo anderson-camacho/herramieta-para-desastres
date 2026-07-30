@@ -6,14 +6,14 @@ import 'package:signal_scope/src/features/onboarding/presentation/onboarding_scr
 import 'package:signal_scope/src/features/privacy/presentation/privacy_screen.dart';
 import 'package:signal_scope/src/features/shell/presentation/rescue_shell.dart';
 
-class SignalScopeApp extends StatefulWidget {
-  const SignalScopeApp({super.key});
+class HerramientaDesastresApp extends StatefulWidget {
+  const HerramientaDesastresApp({super.key});
 
   @override
-  State<SignalScopeApp> createState() => _SignalScopeAppState();
+  State<HerramientaDesastresApp> createState() => _HerramientaDesastresAppState();
 }
 
-class _SignalScopeAppState extends State<SignalScopeApp> {
+class _HerramientaDesastresAppState extends State<HerramientaDesastresApp> {
   final AppPreferences _preferences = AppPreferences();
   bool? _onboardingSeen;
 
@@ -25,35 +25,27 @@ class _SignalScopeAppState extends State<SignalScopeApp> {
 
   Future<void> _load() async {
     final seen = await _preferences.isOnboardingSeen();
-    if (!mounted) {
-      return;
-    }
-    setState(() {
-      _onboardingSeen = seen;
-    });
+    if (!mounted) return;
+    setState(() => _onboardingSeen = seen);
   }
 
   Future<void> _completeOnboarding() async {
     await _preferences.setOnboardingSeen(true);
-    if (!mounted) {
-      return;
-    }
-    setState(() {
-      _onboardingSeen = true;
-    });
+    if (!mounted) return;
+    setState(() => _onboardingSeen = true);
   }
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'SignalScope',
+      title: 'Herramienta para Desastres',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.light(),
       darkTheme: AppTheme.dark(),
       routes: <String, WidgetBuilder>{
         '/privacy': (_) => const PrivacyScreen(),
       },
-          home: _onboardingSeen == null
+      home: _onboardingSeen == null
           ? const Scaffold(body: Center(child: CircularProgressIndicator()))
           : _onboardingSeen == true
               ? const RescueShell()

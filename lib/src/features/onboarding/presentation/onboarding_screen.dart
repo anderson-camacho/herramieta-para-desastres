@@ -42,7 +42,7 @@ class OnboardingScreen extends StatelessWidget {
                       mainAxisSize: MainAxisSize.min,
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: <Widget>[
-                        Text('SignalScope', style: theme.textTheme.headlineMedium),
+                        Text('Herramienta para Desastres', style: theme.textTheme.headlineMedium),
                         const SizedBox(height: 12),
                         Text(
                           'Observa senales que Android expone legalmente: celular, Wi-Fi, Bluetooth y compatibilidad USB Host.',
@@ -61,22 +61,10 @@ class OnboardingScreen extends StatelessWidget {
                           spacing: 12,
                           runSpacing: 12,
                           children: <Widget>[
-                            FilledButton(
-                              onPressed: onContinue,
-                              child: const Text('Continuar'),
-                            ),
-                            OutlinedButton(
-                              onPressed: onOpenPrivacy,
-                              child: const Text('Ver privacidad'),
-                            ),
-                            OutlinedButton(
-                              onPressed: onOpenPermissions,
-                              child: const Text('Configurar permisos'),
-                            ),
-                            TextButton(
-                              onPressed: onUseLimitedMode,
-                              child: const Text('Usar con funciones limitadas'),
-                            ),
+                            FilledButton(onPressed: onContinue, child: const Text('Continuar')),
+                            OutlinedButton(onPressed: onOpenPrivacy, child: const Text('Ver privacidad')),
+                            OutlinedButton(onPressed: onOpenPermissions, child: const Text('Configurar permisos')),
+                            TextButton(onPressed: onUseLimitedMode, child: const Text('Usar con funciones limitadas')),
                           ],
                         ),
                       ],

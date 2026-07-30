@@ -40,16 +40,16 @@ android {
         create("development") {
             dimension = "env"
             applicationIdSuffix = ".dev"
-            resValue("string", "app_name", "SignalScope Dev")
+            resValue("string", "app_name", "Herramienta para Desastres Dev")
         }
         create("staging") {
             dimension = "env"
             applicationIdSuffix = ".staging"
-            resValue("string", "app_name", "SignalScope Staging")
+            resValue("string", "app_name", "Herramienta para Desastres Staging")
         }
         create("production") {
             dimension = "env"
-            resValue("string", "app_name", "SignalScope")
+            resValue("string", "app_name", "Herramienta para Desastres")
         }
     }
     kotlinOptions {

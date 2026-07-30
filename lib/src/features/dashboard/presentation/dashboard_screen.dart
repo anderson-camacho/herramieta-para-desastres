@@ -49,9 +49,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     _historyEnabled = await _historyStore.isEnabled();
     _capabilities = await _repository.loadCapabilities() as CapabilitySnapshot;
     _subscription = (_repository.watchSignals() as Stream<List<SignalReading>>).listen((items) {
-      if (!mounted) {
-        return;
-      }
+      if (!mounted) return;
       setState(() {
         _signals = items;
         if (_historyEnabled) {
@@ -66,9 +64,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     }, onError: (Object error, StackTrace stackTrace) {
       AppLogger.instance.log('error', 'Signal stream failed: $error');
     });
-    if (mounted) {
-      setState(() {});
-    }
+    if (mounted) setState(() {});
   }
 
   @override
@@ -79,14 +75,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   Future<void> _toggleHistory(bool value) async {
     await _historyStore.setEnabled(value);
-    if (!mounted) {
-      return;
-    }
+    if (!mounted) return;
     setState(() {
       _historyEnabled = value;
-      if (!value) {
-        _history.clear();
-      }
+      if (!value) _history.clear();
     });
   }
 
@@ -97,23 +89,17 @@ class _DashboardScreenState extends State<DashboardScreen> {
     }
     if (_bleRunning) {
       await (_repository as NativeSignalRepository).stopBleSession();
-      if (!mounted) {
-        return;
-      }
+      if (!mounted) return;
       setState(() => _bleRunning = false);
       return;
     }
     await (_repository as NativeSignalRepository).startBleSession();
-    if (!mounted) {
-      return;
-    }
+    if (!mounted) return;
     setState(() => _bleRunning = true);
   }
 
   Future<void> _requestRelevantPermissions() async {
-    if (_useDemo) {
-      return;
-    }
+    if (_useDemo) return;
     final requests = <Permission>[
       Permission.phone,
       Permission.locationWhenInUse,
@@ -123,9 +109,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     ];
     await requests.request();
     _capabilities = await _repository.loadCapabilities() as CapabilitySnapshot;
-    if (!mounted) {
-      return;
-    }
+    if (!mounted) return;
     setState(() {});
   }
 
@@ -136,15 +120,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
       appBar: widget.embedded
           ? null
           : AppBar(
-              title: const Text('SignalScope'),
+              title: const Text('Herramienta para Desastres'),
               actions: <Widget>[
                 Row(
                   children: <Widget>[
                     const Text('Demo'),
-                    Switch(
-                      value: _useDemo,
-                      onChanged: null,
-                    ),
+                    Switch(value: _useDemo, onChanged: null),
                   ],
                 ),
               ],

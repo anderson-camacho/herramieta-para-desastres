@@ -3,6 +3,7 @@ name: ci
 on:
   push:
   pull_request:
+  workflow_dispatch:
 
 jobs:
   flutter:
@@ -27,6 +28,5 @@ jobs:
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
         with:
-          name: signalscope-development-apk
+          name: herramienta-desastres-development-apk
           path: build/app/outputs/flutter-apk/*.apk
-

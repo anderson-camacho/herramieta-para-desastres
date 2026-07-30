@@ -95,7 +95,7 @@ class SosService {
 
   Future<void> sharePayload(SosPayload payload) {
     return SharePlus.instance.share(
-      ShareParams(text: payload.message, subject: 'SOS SignalScope'),
+      ShareParams(text: payload.message, subject: 'SOS Herramienta para Desastres'),
     );
   }
 
@@ -122,7 +122,7 @@ class SosService {
       scheme: 'mailto',
       path: email,
       queryParameters: <String, String>{
-        'subject': 'SOS SignalScope',
+        'subject': 'SOS Herramienta para Desastres',
         'body': payload.message,
       },
     );

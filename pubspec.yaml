@@ -1,5 +1,5 @@
 name: signal_scope
-description: SignalScope MVP for lawful local signal observation on Android.
+description: Herramienta para Desastres, MVP para observacion local permitida de senales en Android.
 publish_to: "none"
 version: 0.1.0+1
 
@@ -29,4 +29,3 @@ dev_dependencies:
 flutter:
   uses-material-design: true
   generate: true
-

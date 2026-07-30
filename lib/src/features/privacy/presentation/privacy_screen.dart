@@ -10,7 +10,7 @@ class PrivacyScreen extends StatelessWidget {
       body: ListView(
         padding: const EdgeInsets.all(20),
         children: const <Widget>[
-          Text('SignalScope procesa la informacion localmente y no requiere una cuenta.'),
+          Text('Herramienta para Desastres procesa la informacion localmente y no requiere una cuenta.'),
           SizedBox(height: 12),
           Text('No recopila IMEI, IMSI, numero de telefono, contactos, mensajes ni claves Wi-Fi.'),
           SizedBox(height: 12),
