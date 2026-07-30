@@ -1,8 +1,8 @@
-# Arquitectura de SignalScope
+# Arquitectura de Herramienta para Desastres
 
 ## Contexto
 
-SignalScope separa la interfaz compartida en Flutter de las capacidades nativas Android expuestas mediante `MethodChannel` y `EventChannel`. La prioridad del MVP es ser tecnicamente honesto: solo muestra datos que Android publica legalmente y degrada de forma explicita cuando el hardware, permisos o plataforma no lo permiten.
+Herramienta para Desastres separa la interfaz compartida en Flutter de las capacidades nativas Android expuestas mediante `MethodChannel` y `EventChannel`. La prioridad del MVP es ser tecnicamente honesto: solo muestra datos que Android publica legalmente y degrada de forma explicita cuando el hardware, permisos o plataforma no lo permiten.
 
 ## Decisiones principales
 
@@ -16,10 +16,10 @@ SignalScope separa la interfaz compartida en Flutter de las capacidades nativas 
 
 ## Capas
 
-- Presentacion Flutter: [dashboard_screen.dart](D:/github/herramieta-para-desastres/lib/src/features/dashboard/presentation/dashboard_screen.dart)
-- Dominio de senales: [signal_models.dart](D:/github/herramieta-para-desastres/lib/src/features/signals/domain/signal_models.dart)
-- Infraestructura Flutter: [native_signal_repository.dart](D:/github/herramieta-para-desastres/lib/src/features/signals/data/native_signal_repository.dart)
-- Bridge Android: [MainActivity.kt](D:/github/herramieta-para-desastres/android/app/src/main/kotlin/com/signalscope/app/MainActivity.kt)
+- Presentacion Flutter: `lib/src/features/dashboard/presentation/dashboard_screen.dart`
+- Dominio de senales: `lib/src/features/signals/domain/signal_models.dart`
+- Infraestructura Flutter: `lib/src/features/signals/data/native_signal_repository.dart`
+- Bridge Android: `android/app/src/main/kotlin/com/signalscope/app/MainActivity.kt`
 
 ## Flujo Flutter-Kotlin
 
